@@ -5,9 +5,7 @@ from obspy import UTCDateTime
 import matplotlib.pyplot as plt
 import os as os
 import datetime
-from kav_init import rootdata, rootcode, kav_angle, flag_matching, stationdir, stationid, flag_bandedratio, shifttime, freqbands, triggerresttime, sectionlen, seasons
-from kav_init import fmin, fmax, waterlvl, flag_wlvl, ratiorange, kavaprodemp, write_flag, rootouts, outputlabel, plot_flag, bbd_ids, cataloguefile, pkl_only
-# from instrument_restitution import apply_bb_tf_inv, simulate_45Hz
+from kav_init import rootdata
 from matplotlib.dates import DateFormatter
 from datetime  import timedelta
 import time as time
@@ -17,54 +15,54 @@ from scipy import signal
 import pickle
 import plutil as plutil
 import kav_init as ini
-import kavutil as kt
 from scipy.ndimage import gaussian_filter1d, gaussian_filter
 import matplotlib.dates as mdates, matplotlib.gridspec as gridspec
 
-# Moving mean "movmean()"
-def movmean(x, k):
-    """Moving average of x with window size k."""
-    import numpy as np
-    x = np.asarray(x)
-    return np.convolve(x, np.ones(k) / k, mode='valid')
 
-# Moving standard deviation "movstd()"
-def movstd(x, k):
-    """Moving standard deviation of x with window size k."""
-    import numpy as np
-    x = np.asarray(x)
-    return np.sqrt(movmean(x**2, k) - movmean(x, k)**2)
+# # Moving mean "movmean()"
+# def movmean(x, k):
+#     """Moving average of x with window size k."""
+#     import numpy as np
+#     x = np.asarray(x)
+#     return np.convolve(x, np.ones(k) / k, mode='valid')
+
+# # Moving standard deviation "movstd()"
+# def movstd(x, k):
+#     """Moving standard deviation of x with window size k."""
+#     import numpy as np
+#     x = np.asarray(x)
+#     return np.sqrt(movmean(x**2, k) - movmean(x, k)**2)
 
 # compute envelopes of a signal "hl_envelopes()"
-def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
-    """
-    Input :
-    s: 1d-array, data signal from which to extract high and low envelopes
-    dmin, dmax: int, optional, size of chunks, use this if the size of the input signal is too big
-    split: bool, optional, if True, split the signal in half along its mean, might help to generate the envelope in some cases
-    Output :
-    lmin,lmax : high/low envelope idx of input signal s
-    """
-    import numpy as np
-    # locals min      
-    lmin = (np.diff(np.sign(np.diff(s))) > 0).nonzero()[0] + 1 
-    # locals max
-    lmax = (np.diff(np.sign(np.diff(s))) < 0).nonzero()[0] + 1 
+# def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
+#     """
+#     Input :
+#     s: 1d-array, data signal from which to extract high and low envelopes
+#     dmin, dmax: int, optional, size of chunks, use this if the size of the input signal is too big
+#     split: bool, optional, if True, split the signal in half along its mean, might help to generate the envelope in some cases
+#     Output :
+#     lmin,lmax : high/low envelope idx of input signal s
+#     """
+#     import numpy as np
+#     # locals min      
+#     lmin = (np.diff(np.sign(np.diff(s))) > 0).nonzero()[0] + 1 
+#     # locals max
+#     lmax = (np.diff(np.sign(np.diff(s))) < 0).nonzero()[0] + 1 
     
-    if split:
-        # s_mid is zero if s centered around x-axis or more generally mean of signal
-        s_mid = np.mean(s) 
-        # pre-sorting of locals min based on relative position with respect to s_mid 
-        lmin = lmin[s[lmin]<s_mid]
-        # pre-sorting of local max based on relative position with respect to s_mid 
-        lmax = lmax[s[lmax]>s_mid]
+#     if split:
+#         # s_mid is zero if s centered around x-axis or more generally mean of signal
+#         s_mid = np.mean(s) 
+#         # pre-sorting of locals min based on relative position with respect to s_mid 
+#         lmin = lmin[s[lmin]<s_mid]
+#         # pre-sorting of local max based on relative position with respect to s_mid 
+#         lmax = lmax[s[lmax]>s_mid]
 
-    # global min of dmin-chunks of locals min 
-    lmin = lmin[[i+np.argmin(s[lmin[i:i+dmin]]) for i in range(0,len(lmin),dmin)]]
-    # global max of dmax-chunks of locals max 
-    lmax = lmax[[i+np.argmax(s[lmax[i:i+dmax]]) for i in range(0,len(lmax),dmax)]]
+#     # global min of dmin-chunks of locals min 
+#     lmin = lmin[[i+np.argmin(s[lmin[i:i+dmin]]) for i in range(0,len(lmin),dmin)]]
+#     # global max of dmax-chunks of locals max 
+#     lmax = lmax[[i+np.argmax(s[lmax[i:i+dmax]]) for i in range(0,len(lmax),dmax)]]
     
-    return lmin,lmax
+#     return lmin,lmax
 
 # Moving mean "myplot"
 def myplot(
@@ -154,7 +152,7 @@ def compute_kava(x, station, frequency_bands, fmin=3, fmax=60, nfft=None, Fs=Non
     cmap:            colormap for plotting
     waterlvl:        water level kava computation
     
-    LuBi, 2021
+    by L.Bitzan, 2024
     '''
     import  numpy               as      np
     import  matplotlib.pyplot   as      plt
@@ -251,122 +249,121 @@ def get_data(year=23, month=4, day=5, rootdata='data', stationdir='KAV11', stati
 
     return st, stri
 
-def compute_banded_ratio(x1, x2, freqbands, shifttime=ini.shifttime, stats=['KAV04','KAV11'], zerophase=True, corners=2, window=20):
-    '''
-    Compute the amplitude ratio of two stations based on their largest characteristic frequency bands.
+# def compute_banded_ratio(x1, x2, freqbands, shifttime=ini.shifttime, stats=['KAV04','KAV11'], zerophase=True, corners=2, window=20):
+#     '''
+#     Compute the amplitude ratio of two stations based on their largest characteristic frequency bands.
     
-    Input:\n
-    x1:         obspy stream object, remote station\n
-    x2:         obspy stream object, close station\n
-    freqbands:  dictionary, frequency bands of interest for each station\n
-    shifttime:  float, time shift between stations in seconds\n
-    stats:      list of strings, two items, station names\n
-    zerophase:  bool, True: zero-phase filter, False: minimum-phase filter\n
-    corners:    int, number of corners for bandpass filter [0, 2, 4]\n
-    window:     int, window size for rolling statistics\n
+#     Input:\n
+#     x1:         obspy stream object, remote station\n
+#     x2:         obspy stream object, close station\n
+#     freqbands:  dictionary, frequency bands of interest for each station\n
+#     shifttime:  float, time shift between stations in seconds\n
+#     stats:      list of strings, two items, station names\n
+#     zerophase:  bool, True: zero-phase filter, False: minimum-phase filter\n
+#     corners:    int, number of corners for bandpass filter [0, 2, 4]\n
+#     window:     int, window size for rolling statistics\n
 
-    Output:\n
-    ratio:      array, amplitude ratio\n
-    ratiotime:  array, time axis for amplitude ratio
+#     Output:\n
+#     ratio:      array, amplitude ratio\n
+#     ratiotime:  array, time axis for amplitude ratio
 
 
-    LuBi, 2024
-    '''
-    from kavutil import rolling_stats
+#     LuBi, 2024
+#     '''
+#     # from kavutil import rolling_stats
     
-    a = x1.copy()
-    b = x2.copy()
+#     a = x1.copy()
+#     b = x2.copy()
 
-    fmin = np.zeros(2)
-    fmax = fmin.copy()
-    ind  = np.zeros(2, dtype=int)
+#     fmin = np.zeros(2)
+#     fmax = fmin.copy()
+#     ind  = np.zeros(2, dtype=int)
 
 
-    for i in range(2):
-        fdiff       = (np.diff(freqbands[stats[i]])).flatten()
-        fdiffmax    = np.amax(fdiff)
+#     for i in range(2):
+#         fdiff       = (np.diff(freqbands[stats[i]])).flatten()
+#         fdiffmax    = np.amax(fdiff)
 
-        ind[i]      = np.where(fdiff == fdiffmax)[0][0]
+#         ind[i]      = np.where(fdiff == fdiffmax)[0][0]
 
-        fmin[i]     = freqbands[stats[i]][ind[i]][0]
-        if fmin[i] < 0.1:
-            fmin[i] = 0.1
-        fmax[i]     = freqbands[stats[i]][ind[i]][1]
+#         fmin[i]     = freqbands[stats[i]][ind[i]][0]
+#         if fmin[i] < 0.1:
+#             fmin[i] = 0.1
+#         fmax[i]     = freqbands[stats[i]][ind[i]][1]
     
-    # if stats[0] in ['KAV00', 'KAV10']:
-    #     a = apply_bb_tf_inv(a)
-    #     a = simulate_45Hz(a)
-    # if stats[1] in ['KAV00', 'KAV10']:
-    #     b = apply_bb_tf_inv(b)
-    #     b = simulate_45Hz(b)
+#     # if stats[0] in ['KAV00', 'KAV10']:
+#     #     a = apply_bb_tf_inv(a)
+#     #     a = simulate_45Hz(a)
+#     # if stats[1] in ['KAV00', 'KAV10']:
+#     #     b = apply_bb_tf_inv(b)
+#     #     b = simulate_45Hz(b)
 
-    a.filter('bandpass', freqmin=fmin[0], freqmax=fmax[0], corners=corners, zerophase=zerophase)
-    b.filter('bandpass', freqmin=fmin[1], freqmax=fmax[1], corners=corners, zerophase=zerophase)
+#     a.filter('bandpass', freqmin=fmin[0], freqmax=fmax[0], corners=corners, zerophase=zerophase)
+#     b.filter('bandpass', freqmin=fmin[1], freqmax=fmax[1], corners=corners, zerophase=zerophase)
 
-    a.decimate(factor=2, no_filter=True)
-    b.decimate(factor=2, no_filter=True)
+#     a.decimate(factor=2, no_filter=True)
+#     b.decimate(factor=2, no_filter=True)
 
-    ratiotime   = b.times(reftime=b.stats.starttime)
-    idxshift_bandedratio = shifttime / b.stats.delta
+#     ratiotime   = b.times(reftime=b.stats.starttime)
+#     idxshift_bandedratio = shifttime / b.stats.delta
 
-    b_amplitude = rolling_stats(np.abs(b.data), np.amax, window=int(window))
-    a_amplitude = rolling_stats(np.abs(a.data), np.amax, window=int(window))
+#     b_amplitude = rolling_stats(np.abs(b.data), np.amax, window=int(window))
+#     a_amplitude = rolling_stats(np.abs(a.data), np.amax, window=int(window))
 
-    ratio       = b_amplitude[:-int(idxshift_bandedratio)] / a_amplitude[int(idxshift_bandedratio):]
-    ratiotime   = ratiotime[:-int(idxshift_bandedratio)]
+#     ratio       = b_amplitude[:-int(idxshift_bandedratio)] / a_amplitude[int(idxshift_bandedratio):]
+#     ratiotime   = ratiotime[:-int(idxshift_bandedratio)]
 
-    return ratio, ratiotime
+#     return ratio, ratiotime
 
-def compute_simple_ratio(x1, x2, shifttime=2.25, stats=['KAV04','KAV11'], zerophase=True, corners=2, window=20):
-    '''
-    Compute the amplitude ratio of two stations.
+# def compute_simple_ratio(x1, x2, shifttime=2.25, stats=['KAV04','KAV11'], zerophase=True, corners=2, window=20):
+#     '''
+#     Compute the amplitude ratio of two stations.
     
-    Input:\n
-    x1:         obspy stream object, remote station\n
-    x2:         obspy stream object, close station\n
-    shifttime:  float, time shift between stations in seconds\n
-    stats:      list of strings, two items, station names\n
-    zerophase:  bool, True: zero-phase filter, False: minimum-phase filter\n
-    corners:    int, number of corners for bandpass filter [0, 2, 4]\n
-    window:     int, window size for rolling statistics\n
+#     Input:\n
+#     x1:         obspy stream object, remote station\n
+#     x2:         obspy stream object, close station\n
+#     shifttime:  float, time shift between stations in seconds\n
+#     stats:      list of strings, two items, station names\n
+#     zerophase:  bool, True: zero-phase filter, False: minimum-phase filter\n
+#     corners:    int, number of corners for bandpass filter [0, 2, 4]\n
+#     window:     int, window size for rolling statistics\n
 
-    Output:\n
-    ratio:      array, amplitude ratio\n
-    ratiotime:  array, time axis for amplitude ratio
+#     Output:\n
+#     ratio:      array, amplitude ratio\n
+#     ratiotime:  array, time axis for amplitude ratio
 
 
-    LuBi, 2024
-    '''
-    from kavutil import rolling_stats
-    from kav_init import fmin, fmax
+#     LuBi, 2024
+#     '''
+#     from kav_init import fmin, fmax
     
-    a    = x1.copy()
-    b    = x2.copy()    
+#     a    = x1.copy()
+#     b    = x2.copy()    
     
-    #TODO: define
-    # if stats[0] in ['KAV00', 'KAV10']:
-    #     a = apply_bb_tf_inv(a)
-    #     a = simulate_45Hz(a)
-    # if stats[1] in ['KAV00', 'KAV10']:
-    #     b = apply_bb_tf_inv(b)
-    #     b = simulate_45Hz(b)
+#     #TODO: define
+#     # if stats[0] in ['KAV00', 'KAV10']:
+#     #     a = apply_bb_tf_inv(a)
+#     #     a = simulate_45Hz(a)
+#     # if stats[1] in ['KAV00', 'KAV10']:
+#     #     b = apply_bb_tf_inv(b)
+#     #     b = simulate_45Hz(b)
 
-    a.filter('bandpass', freqmin=fmin, freqmax=fmax, corners=corners, zerophase=zerophase)
-    b.filter('bandpass', freqmin=fmin, freqmax=fmax, corners=corners, zerophase=zerophase)
+#     a.filter('bandpass', freqmin=fmin, freqmax=fmax, corners=corners, zerophase=zerophase)
+#     b.filter('bandpass', freqmin=fmin, freqmax=fmax, corners=corners, zerophase=zerophase)
 
-    a.decimate(factor=2, no_filter=True)
-    b.decimate(factor=2, no_filter=True)
+#     a.decimate(factor=2, no_filter=True)
+#     b.decimate(factor=2, no_filter=True)
 
-    ratiotime            = b.times(reftime=b.stats.starttime)
-    idxshift_bandedratio = shifttime / b.stats.delta
+#     ratiotime            = b.times(reftime=b.stats.starttime)
+#     idxshift_bandedratio = shifttime / b.stats.delta
 
-    b_amplitude = rolling_stats(np.abs(b.data), np.amax, window=int(window))
-    a_amplitude = rolling_stats(np.abs(a.data), np.amax, window=int(window))
+#     b_amplitude = rolling_stats(np.abs(b.data), np.amax, window=int(window))
+#     a_amplitude = rolling_stats(np.abs(a.data), np.amax, window=int(window))
 
-    ratio       = b_amplitude[:-int(idxshift_bandedratio)] / a_amplitude[int(idxshift_bandedratio):]
-    ratiotime   = ratiotime[:-int(idxshift_bandedratio)]
+#     ratio       = b_amplitude[:-int(idxshift_bandedratio)] / a_amplitude[int(idxshift_bandedratio):]
+#     ratiotime   = ratiotime[:-int(idxshift_bandedratio)]
 
-    return ratio, ratiotime
+#     return ratio, ratiotime
 
 
 def org_days(stationdir, yoi=23, imoi=4):
@@ -951,243 +948,7 @@ def select_events_v2(df:             pd.DataFrame,
         print(f'Selected {len(selected_events)} events between {datetime_start} and {datetime_end}.')
         return selected_events
 
-
-def eval_eventcount(catalogdirectory:   str,
-                    
-                    flag_individual:    bool=True,
-                    thresholdinfo = None,
-                    flag_plot:          bool=False):
-    '''
-    Counts the number of events in a series of catalogs. Then returns an array/pickle with the data.
-
-    Parameters
-    ----------
-    catalogdirectory : string
-        Path to a directory containing several catalog.txt files belonging to the same experiment.
-    flag_individual : bool, optional
-        If True, the thresholdvalues are read from the filenames. Default is True.
-    thresholdinfo : list, optional
-        List containing [start, end, step] of threshold values. Default is None. Must be given together with flag_individual=True.
-    flag_plot : bool, optional
-        If True, a plot is generated. Default is False.
-
-    Returns
-    -------
-    neventdict : DataFrame
-        parameter   -> varying parameter
-        counts      -> counts of catalog with parameter respectively
-    LuB 07/2024
-    '''
     
-    path        = catalogdirectory
-    neventdict  = {}
-    files       = [os.path.join(path, _) for _ in os.listdir(path) if '*.txt']
-    files.sort()
-    nfiles      = len(files)
-    nevents     = np.zeros(nfiles)
-
-    if flag_individual:
-        threshold = [float(fname[-8:-4]) for fname in files]
-    elif thresholdinfo is not None and flag_individual is False:
-        threshold = np.arange(thresholdinfo[0], thresholdinfo[1]+1, thresholdinfo[2])
-    else:
-        threshold = np.arange(nfiles)
-
-    for i, f in enumerate(files):
-        with open(f) as file:
-            nevents[i] = len(file.readlines())-1
-
-    neventdict  = {'parameter':  threshold,
-                  'counts':     nevents}
-    neventdf    = pd.DataFrame(neventdict)
-        
-    
-    if flag_plot:
-        fig, ax = plt.subplots(1,1, figsize=(8,6))
-        ax.plot(neventdf['parameter'], neventdf['counts'], ':x', color='tab:blue')
-        ax.set_xlabel('Parameter')
-        ax.set_ylabel('Eventcounts / measuring campaign')
-        axcopy = ax
-        myplot(axoi=ax)
-        pathout = os.getcwd()+'/eval_eventcount'
-        while os.path.exists(pathout+'.png'):
-            counter = 1
-            pathout = pathout + '_' + str(counter) + '.png'
-            counter += 1
-        pathout = pathout + '.png';    print('Saving plot to: \n', pathout)
-
-        plt.savefig(pathout, dpi=300)
-        plt.show()
-        
-        return axcopy
-
-    else:
-        return neventdf
-
-def eval_eventcount_withtremorphaseremoval(catalogdirectory: str,
-                                           flag_individual: bool=True,
-                                           thresholdinfo=None,
-                                           flag_plot: bool=False,
-                                           tremor_rate: int=7,
-                                           interval: int=5,
-                                           episode: list=['2023-05-30 01:00:00', '2023-05-30 01:30:00'],
-                                           safedf: str='None'):
-    '''
-    Counts the number of events in a series of catalogs. Then returns an array/pickle with the data.
-
-    Parameters
-    ----------
-    catalogdirectory : string
-        Path to a directory containing several catalog.txt files belonging to the same experiment.
-    flag_individual : bool, optional
-        If True, the thresholdvalues are read from the filenames. Default is True.
-    thresholdinfo : list, optional
-        List containing [start, end, step] of threshold values. Default is None. Must be given together with flag_individual=True.
-    flag_plot : bool, optional
-        If True, a plot is generated. Default is False.
-    tremor_rate : int, optional
-        Threshold rate of events per interval. Default is 7.
-    interval : int, optional
-        Time interval in minutes. Default is 5.
-    episode : list, optional
-        Time interval of interest. Default is ['2023-05-30 01:00:00', '2023-05-30 01:30:00'].
-    safedf : str, optional
-        Name of the DataFrame to save. Defaults to None.
-
-    Returns
-    -------
-    neventdict : DataFrame
-        parameter   -> varying parameter
-        counts      -> counts of catalog with parameter respectively
-    LuB 07/2024
-    '''
-    from kavutil import rmv_tremorphases
-    path        = catalogdirectory
-    neventdict  = {}
-    files       = [os.path.join(path, _) for _ in os.listdir(path) if '*.txt']
-    files.sort()
-    nfiles      = len(files)
-    nevents     = np.zeros(nfiles)
-
-    if flag_individual and thresholdinfo is None:
-        threshold = [float(fname[-8:-4]) for fname in files]
-    elif thresholdinfo is not None and flag_individual is True:
-        threshold = np.arange(thresholdinfo[0], thresholdinfo[1]+1, thresholdinfo[2])
-    else:
-        threshold = np.arange(nfiles)
-
-    for i, f in enumerate(files):
-
-
-        df = rmv_tremorphases(catalog=f,
-                              threshold_rate=tremor_rate,
-                              interval=interval,
-                              episode=episode,
-                              remove_tremor=True)
-        nevents[i] = len(df)
-        if safedf != 'None':
-            df.to_csv(safedf + '.csv', index=False)
-        # breakpoint()
-
-    neventdict  = {'parameter':  threshold,
-                  'counts':     nevents}    
-    neventdf    = pd.DataFrame(neventdict)
-    return neventdf
-
-    
-
-def rmv_tremorphases(catalog:        str  = 'D:/data_kavachi_both/results/catalogs_withprominence_trigbreak/catalog_7.2_withprominence.trigbreak_00.5.txt',
-                     threshold_rate: int  = 7,
-                     interval:       int  = 5,
-                     episode:        list = ['2023-05-30 01:00:00', '2023-05-30 01:30:00'],
-                     plotting:       bool = False,
-                     savedf:         str  = 'None',
-                     remove_tremor:  bool = False):
-    '''
-    Remove tremor phases from the catalog based on a fix rate of events per specific time interval.
-
-    Parameters:
-    -----------
-    catalog : str
-        Name of the catalog file.
-    threshold_rate : int, optional
-        Threshold rate of events per interval. Default is 5.
-    interval : int, optional
-        Time interval in minutes. Default is 5.
-    episode : list, optional
-        Time interval of interest. Default is ['2023-05-30 01:00:00', '2023-05-30 01:30:00'].
-    plotting : bool, optional
-        If True, a plot is generated. Default is False.
-    savedf : str, optional
-        Name of the DataFrame to save. Default is 'None'.
-
-    Returns:
-    --------
-    df : pd.DataFrame
-        DataFrame containing the tremor phases removed.
-
-    2024/08/08 - created  - LuB
-    2024/08/12 - add df column to store activity rate - LuB
-    '''
-    from kavutil import read_catalog, myplot
-    path            = catalog
-    freqinterval    = str(interval) + 'min'
-    df              = read_catalog(path)
-    episode         = pd.to_datetime(episode,format='mixed')
-    # df.drop(columns=['ratio', 'kavachi_index'], inplace=True)
-    df.drop(df.index[df['date'] < episode[0]], inplace=True)
-    df.drop(df.index[df['date'] > episode[1]], inplace=True)
-    df['date'].astype('datetime64[ns]')
-    
-    df['activity_rate'] = 1
-    dfgby = df.groupby(pd.Grouper(key="date", freq=freqinterval))
-    
-    counts = dfgby['activity_rate'].transform('count')
-    df.drop(columns=['activity_rate'], inplace=True)
-    df = df.join(counts)
-    df['tremor'] = df['activity_rate'] >= threshold_rate
-
-    if remove_tremor is True:
-        df.drop(df.index[df['tremor'] == True], inplace=True)
-    
-    # dfnew = dfgby.size().to_frame(name='activity_rate')
-    # dfnew['date'] = dfnew.index
-    # dfnew.reset_index(drop=True, inplace=True)
-    # dfnew['tremor'] = dfnew['activity_rate'] >= threshold_rate
-    # df['tremor']    = False
-    # for i in tqdm(range(len(dfnew))):
-    #     df.loc[(timedelta(minutes=0) <= df['date'] - dfnew['date'].iloc[i]) & (df['date'] - dfnew['date'].iloc[i] < timedelta(minutes=interval)), 'activity_rate'] = dfnew['activity_rate'].iloc[i]
-    #     if dfnew['tremor'].iloc[i] == True:
-    #         df.loc[(timedelta(minutes=0) <= df['date'] - dfnew['date'].iloc[i]) & (df['date'] - dfnew['date'].iloc[i] < timedelta(minutes=interval)), 'tremor'] = True
-
-    if plotting:
-        fig, ax     = plt.subplots(2,1, figsize=(12,8), height_ratios=[3,1], sharex=True)
-        ax[0].set_title('Tremor phases based on event rate')
-        date_form   = DateFormatter('%Y-%m-%d\n%H:%M:%S')
-        data_gap    = pd.to_datetime(np.array(['2023-05-03 00:00:00', '2023-05-23 00:00:00'], dtype='datetime64[s]'))
-        ax[0].plot(df['date'], df['activity_rate'], '-', color='tab:blue', alpha=.7, label='Counts/'+freqinterval)
-        ax[0].fill_between(df['date'], 0, max(df['activity_rate'])*.75, where=df['tremor'],
-                           color='tab:orange', label='Tremor phase', alpha=.3, interpolate=False)
-        if episode[0] < data_gap[0] and episode[1] > data_gap[1]:
-            ax[0].hlines(y=0, xmin=data_gap[0], xmax=data_gap[1], color='red', label='Data gap')
-            ax[1].fill_between(data_gap, 0, 1, color='red', alpha=.3)
-        ax[1].scatter(df['date'][df['tremor']],          np.ones(len(df['date'][df['tremor']]))*2/3,        color='orange',   alpha=.3, label='Events in tremor phase')
-        ax[1].scatter(df['date'][df['tremor'] == False], np.ones(len(df['date'][df['tremor'] == False]))/3, color='tab:blue', alpha=.3, label='Events outside tremor phase')
-        ax[1].set_ylim(0,1); ax[1].set_yticks([])
-        ax[0].set_ylabel('Counts per '+freqinterval);         
-        [axi.xaxis.set_major_formatter(date_form) for axi in ax]
-        [myplot(axoi=axi) for axi in ax]
-        fig.subplots_adjust(hspace=0)
-        plt.tight_layout
-        plt.savefig(rootdata+'/results/tremorphases_removed.png', dpi=400)
-        plt.show()
-    
-    if savedf != 'None':
-        # print(savedf)
-        df.to_pickle(savedf)
-    
-    return df
-
 def get_data3(day:            pd.Timestamp,
               rootdata:       str='D:/data_kavachi_both',
               stationdir:     str='KAV11',
@@ -1213,6 +974,34 @@ def get_data4(day:            pd.Timestamp,
               flag_horizontal:bool=ini.use_three_components,
               estr:           str='000000.pri1',
               wstr:           str='000000.pri2'):
+    '''
+    Reads in data for a given day and station.
+
+    Parameters
+    ----------
+    day : pd.Timestamp
+        The day for which to read the data.
+    rootdata : str, optional
+        The root directory where the data is stored. Default is 'D:/data_kavachi_both'.
+    stationdir : str, optional
+        The directory of the station. Default is 'KAV11'.
+    stationid : str, optional
+        The ID of the station. Default is 'c0941'.
+    zstr : str, optional
+        The string to append for the vertical component file. Default is '000000.pri0'.
+    flag_horizontal : bool, optional
+        Flag to indicate whether to read horizontal components. Default is True.
+    estr : str, optional
+        The string to append for the east component file. Default is '000000.pri1'.
+    wstr : str, optional
+        The string to append for the west component file. Default is '000000.pri2'.
+
+    Returns
+    -------
+    Stream
+        ObsPy Stream object containing the read data.
+    '''
+
     zfilename   = stationid + day.strftime('%y%m%d') + zstr
     setpath     = os.path.join(rootdata, stationdir, zfilename)
     stream      = read(setpath)
@@ -1230,7 +1019,27 @@ def get_days_list(datetime_start: str,
                   stationdir,
                   stationid,
                   zstr:           str='000000.pri0'):
-    # breakpoint()
+    '''
+    Get a list of days with available data for a specific station and time range.
+
+    Parameters
+    ----------
+    datetime_start : str
+        The start of the time range.
+    datetime_end : str
+        The end of the time range.
+    stationdir : str
+        The directory of the station.
+    stationid : str
+        The ID of the station.
+    zstr : str, optional
+        The string to append for the vertical component file. Default is '000000.pri0'.
+
+    Returns
+    -------
+    np.ndarray
+        Array of days with available data.
+    '''
     datetime_start = pd.to_datetime(datetime_start)
     datetime_end   = pd.to_datetime(datetime_end)
     days           = pd.date_range(start=datetime_start, end=datetime_end, freq='D')
@@ -1249,40 +1058,6 @@ def get_days_list(datetime_start: str,
         if not os.path.exists(rootdata):
             raise FileNotFoundError(f"Data root directory '{rootdata}' does not exist.")
     return dayslist
-
-def assign_values_for_printing_plotting_pandas(timespectralpandas, tamplpandas, eventmarker, kavaproduct2, amplratio, shiftspectral):
-    timefdpandasshifted = timespectralpandas[:-np.int64(shiftspectral)]
-    if len(timefdpandasshifted) > len(tamplpandas):
-        eventtime           = timefdpandasshifted[np.where(eventmarker == 1)]
-        eventkava           = kavaproduct2[np.where(eventmarker == 1)]
-
-        amplratio4events    = np.interp(timefdpandasshifted, tamplpandas, amplratio)
-        eventratio          = amplratio4events[  np.where(eventmarker == 1)]
-    elif len(timefdpandasshifted) < len(tamplpandas): # standard case
-        eventtime           = tamplpandas[np.where(eventmarker == 1)]
-        eventratio          = amplratio[np.where(eventmarker == 1)]
-
-        kavaproduct4events  = np.interp(tamplpandas, timefdpandasshifted, kavaproduct2)
-        eventkava           = kavaproduct4events[np.where(eventmarker == 1)]
-
-    return eventtime, eventkava, eventratio
-
-def assign_values_for_printing_plotting(timespectral, tampl, eventmarker, kavaproduct2, amplratio, shiftspectral):
-        timespecshift           = timespectral[:-np.int64(shiftspectral)]
-        if len(timespecshift) > len(tampl):
-            eventtime           = timespecshift[np.where(eventmarker == 1)]
-            eventkava           = kavaproduct2[np.where(eventmarker == 1)]
-
-            amplratio4events    = np.interp(timespecshift, tampl, amplratio)
-            eventratio          = amplratio4events[  np.where(eventmarker == 1)]
-        elif len(timespecshift) < len(tampl): # standard case
-            eventtime           = tampl[np.where(eventmarker == 1)]
-            eventratio          = amplratio[np.where(eventmarker == 1)]
-
-            kavaproduct4events  = np.interp(tampl, timespecshift, kavaproduct2)
-            eventkava           = kavaproduct4events[np.where(eventmarker == 1)]
-    
-        return eventtime, eventkava, eventratio
 
 
 def get_data2(datetime_start: str,
@@ -1340,48 +1115,7 @@ def get_data2(datetime_start: str,
     else:
         stream
 
-def run_all(datetime_start: str,
-            datetime_end:   str,
-            flag_horizontal:bool=False,
-            rrange=None,
-            trigbreak=None):
-    if not os.getcwd() == 'C:/Users/Arbeit/Documents/matlab/projects/KavachiProject/KavScripts':
-        os.chdir('C:/Users/Arbeit/Documents/matlab/projects/KavachiProject/KavScripts')
 
-    from kavutil import org_days, get_data, compute_simple_ratio, compute_banded_ratio, compute_kava, rolling_stats, fusetriggers #, myplot
-    
-    from kav_init import rootproject, rootcode, rootdata, rootouts, cataloguefile, outputlabel, month_flag, hour_flag, plot_flag, write_flag, freqbands
-    from kav_init import stationdir, stationid, shifttime, ratiorange, flag_bandedratio, flag_wlvl, yoi, moi, doi, hoi, shifttime, ratiorange, triggerresttime
-
-    if rrange:
-        ratiorange = rrange
-
-    if trigbreak:
-        triggerresttime = trigbreak
-
-    print('rootcode    :', rootcode); print('rootproject :', rootproject); print('rootdata    :', rootdata)
-    print('')
-    print('--- Script setup complete. ---')
-
-    datetime_start, datetime_end = pd.to_datetime(datetime_start), pd.to_datetime(datetime_end)
-
-    dayslist = get_days_list(datetime_start, datetime_end, stationdir, stationid)
-
-    # print('Dayslist: ', dayslist)
-    print('\n---> Checked for available data. Preselection of days complete.\n')
-    print('\n---> Compute, save and plot KavachiIndex information daywise. \n')
-    dfresult = multiprocparent(dayslist)
-    
-    if write_flag:
-        outputcatalog = rootouts + 'tbreak' +str(triggerresttime) + cataloguefile
-        if pkl_only:
-            outputcatalog=None
-        outputcatalogpkl= rootouts+ 'tbreak' +str(triggerresttime) + cataloguefile[:-4] + '.pkl'
-        save_df_catalog(dfresult, outputcatalogpkl, outputcatalog)
-    
-    return
-    
-    
 def unify_triggertraces(kavaprodtrig, timespectral, ratiotrigger2, tampl, shiftspectral):
         if len(timespectral) > len(tampl):
             kavatrigger     = kavaprodtrig
@@ -1398,240 +1132,6 @@ def unify_triggertraces(kavaprodtrig, timespectral, ratiotrigger2, tampl, shifts
         return kavatrigger, ratiotrigger
 
 
-def multiprocchild(day):
-
-    # Create output directory corresponding to date
-    # outputlabel  = outputlabel + '_'+str(triggerresttime)
-    outputdir    = rootouts+outputlabel+'/'+outputlabel+ day[0].strftime('%Y%m')+'/' + outputlabel+ day[0].strftime('%Y%m%d')+'/' # <--- set path outputdir for  larger data set on external hard drive
-    # outputcatalog= rootouts+ 'tbreak' +str(triggerresttime) + cataloguefile    #TODO: set back to original  # <--- set path and name for output catalogue for larger data set on external hard drive
-    ### outputcatalog= rootouts+ 'evcnt_rrtest_'+ str(ratiorange[1])[-3:]+'_'+cataloguefile       # <--- set path and name for output catalogue for larger data set on external hard drive
-    # print('outputdir: ', outputdir)
-    # print('outputcatalog: ', outputcatalog)
-    if not os.path.exists(outputdir):
-        os.makedirs(outputdir)
-
-    print('\n --> Computation started for ' + day[0].strftime('%Y-%m-%d')+'.')
-    data = [Stream(), Stream()]
-    for i in range(len(data)):
-        data[i]     = get_data3(day[0], rootdata=rootdata, stationdir=stationdir[i], stationid=stationid[i])
-    datatd, datafd, dataplt  = data.copy(), data.copy(), data.copy()
-    time            = data[0][0].times(reftime=data[0][0].stats.starttime)
-    timepandas      = pd.date_range(start    = pd.Timestamp(data[0][0].stats.starttime.datetime),
-                                    periods  = data[0][0].stats.npts,
-                                    freq     = str(data[0][0].stats.delta)+'S')
-    shift = shifttime/data[0][0].stats.delta
-    if flag_bandedratio:
-        ratio2_1, tampl = compute_banded_ratio(datatd[0][0], datatd[1][0],
-                                               freqbands=freqbands,
-                                               stats=stationdir)
-    elif flag_bandedratio == False:
-        ratio2_1, tampl = compute_simple_ratio(datatd[0][0], datatd[1][0],
-                                               stats=stationdir)
-    else:
-        print('\n Error  -->  flag_bandedratio not set correctly in kav_init.py . \n')
-        return None
-    tamplpandas = pd.date_range(start=pd.Timestamp(data[0][0].stats.starttime.datetime)+timedelta(seconds=tampl[0]),
-                                periods=len(tampl),
-                                freq=str(tampl[1]-tampl[0])+'S')
-    
-    # --- Spectrograms
-    ''' Use d1, d2 as time series for spectrogram computations. Traces are filtered before between freqmin and freqmax.'''
-    sr              = data[0][0].stats.sampling_rate
-    nfft, noverlap  = int(sr), int(sr*.75)                              # sampling rate, number of fft points, overlap
-    cspec           = plt.get_cmap('jet')                               # colormap for spectrogram 'viridis' 'plasma' 'inferno' 'magma' 'cividis' 'jet' 'gnuplot2'
-
-    kava1, d1t, dtspec, d1spec, d1f, cax =  compute_kava(datafd[0][0], noverlap=noverlap, station= stationdir[0], frequency_bands=freqbands, cmap=cspec, appl_waterlvl=flag_wlvl)
-    kava2, d2t, dtspec, d2spec, d2f, cax =  compute_kava(datafd[1][0], noverlap=noverlap, station= stationdir[1], frequency_bands=freqbands, cmap=cspec, appl_waterlvl=flag_wlvl)
-    kava = np.array([kava1,  kava2])
-    dspec= np.array([d1spec, d2spec])
-    timefdpandas = pd.date_range(start=pd.Timestamp(datafd[0][0].stats.starttime.datetime)+timedelta(seconds=d1t[0]),
-                                 periods=len(d1t),
-                                 freq=str(d1t[1]-d1t[0])+'S')
-
-    # --- Define time step between sample points
-    dtsp            = d1t[1]-d1t[0]
-    shiftsp         = shifttime/dtsp
-
-    # --- Compute KaVA Index product according to time-shift
-    kavaprod        = kava[1][:-np.int64(shiftsp)] * kava[0][np.int64(shiftsp):]
-    kavaprod2       = rolling_stats(kavaprod, np.amax, window=10)    # max envelope of kavaprod 6
-
-    '''Implement event trigger based on amplitude ratio'''
-    ratiodelta = tampl[1] - tampl[0]
-    ratiotriggerpeaks,_ = signal.find_peaks(ratio2_1, height=ratiorange, distance=2/ratiodelta) # 2/(tampl[1]-tampl[0]) = 2 sec
-    # ratiotriggerpeaks,_ = signal.find_peaks(ratio2_1, height=ratiorange, prominence=50) # ---> TODO: Try out
-
-    ratiotrigger2   = np.zeros_like(ratio2_1)
-    ratiotrigger2[ratiotriggerpeaks] = 1
-
-    pulselen        = dtsp/ratiodelta
-    ratiotrigger2   = rolling_stats(ratiotrigger2, np.amax, window=np.int64(pulselen * .75))
-
-    # Save value and time of ratio trigger peaks
-    ratiopeaks, tratiopeaks, tratiopeakspandas     = ratio2_1[ratiotriggerpeaks], tampl[ratiotriggerpeaks], timepandas[ratiotriggerpeaks]
-
-    # --- Implement event trigger based on KaVA Index
-    kavaprodtrig    = np.zeros_like(kavaprod)
-    kavaprodtrig    = np.where(kavaprod2 > kavaprodemp, kavaprodtrig + 1, kavaprodtrig)
-
-
-    ''' Assign unisized trigger traces in boolean arrays '''
-    kavatrigger, ratiotrigger = unify_triggertraces(kavaprodtrig, d1t, ratiotrigger2, tampl, shiftsp)
-
-    # --- Fuse traces of trigger elements regarding time and frequency domain and group activies (look up at runPlotCatalog.py)
-    eventmarker     = fusetriggers(kavatrigger, ratiotrigger, tampl, triggerresttime)
-
-    ''' Assign event variables for printing/plotting. '''
-    eventtime, eventkava, eventratio = assign_values_for_printing_plotting(d2t, tampl, eventmarker, kavaprod2, ratio2_1, shiftsp)
-
-    eventtimepd, eventkavapd, eventratiopd = assign_values_for_printing_plotting_pandas(timefdpandas,
-                                                                                        tamplpandas,
-                                                                                        eventmarker,
-                                                                                        kavaprod2,
-                                                                                        ratio2_1,
-                                                                                        shiftsp)
-
-    # --- Write output to file ------------------------------------------------------------------------------------------
-    '''
-    Append line in catalogue for each event triggered by both ratio and kava prod at the same time.
-    Note datetime as utc, amplitude ratio and kava product in its respective column. 
-    If both triggers stay in phase for more than one indices, just append the first appearence.
-    '''
-    # def write_dfdaily(outputcatalog: str = None):
-    #     '''
-    #     Summarises the results of the event analysis and return them as a DataFrame.
-    #     If chosen, the DataFrame is also written to a .txt file or appended respectively.
-        
-    #     Parameters:
-    #     -----------
-    #     pkl_only: bool, optional
-    #         If True, only write the DataFrame to a pickle file. Default is False.
-    #     outputcatalog: str
-    #         Path to the output catalog file.
-            
-    #     Returns:
-    #     --------
-    #     df: pd.DataFrame
-    #         DataFrame containing the results of the event analysis.
-        
-    #     '''
-    #     if outputcatalog is not None:
-    #         if not os.path.exists(outputcatalog):
-    #             with open(outputcatalog, 'w') as file:
-    #                 file.write('Eventtime(UTC), Amplitude_ratio, Kavaproduct\n')
-    #         for idate, time2cata in enumerate(eventtimepd):
-    #             with open(outputcatalog, 'a') as file:
-    #                 file.write(f"{time2cata}, {eventratiopd[idate]}, {eventkavapd[idate]}\n")
-        
-    #     df = pd.DataFrame({'Eventtime(UTC)':   eventtimepd,
-    #                        'Aplitude_ratio':   eventratiopd,
-    #                        'Kavaproduct':      eventkavapd})
-        
-    #     print('Write ' + str(len(eventtimepd)) + ' events to catalog for '+ day[0].strftime('%Y-%m-%d') +' .')
-        
-    #     return df
-
-    def write_dfdaily():
-        '''
-        Summarises the results of the event analysis and return them as a DataFrame.
-        If chosen, the DataFrame is also written to a .txt file or appended respectively.
-        
-        Parameters:
-        -----------
-        pkl_only: bool, optional
-            If True, only write the DataFrame to a pickle file. Default is False.
-        outputcatalog: str
-            Path to the output catalog file.
-            
-        Returns:
-        --------
-        df: pd.DataFrame
-            DataFrame containing the results of the event analysis.
-        
-        '''
-        df = pd.DataFrame({'Eventtime(UTC)':   eventtimepd,
-                           'Amplitude_ratio':   eventratiopd,
-                           'Kavaproduct':      eventkavapd})
-        print('Write ' + str(len(eventtimepd)) + ' events to catalog for '+ day[0].strftime('%Y-%m-%d') +' .')
-        
-        return df
-
-    if write_flag:
-        dfdaily = write_dfdaily()
-
-
-    # --- Plotting -----------------------------------------------------------------------------------------------------
-    tr1, tr2        = dataplt[0][0].copy(), dataplt[1][0].copy()
-    # tr1.filter('bandpass', freqmin=3, freqmax=99, zerophase=True); tr2.filter('bandpass', freqmin=3, freqmax=99, zerophase=True)
-    if stationdir[0] in bbd_ids:
-        tr1.filter('bandpass', freqmin=0.1, freqmax=99, zerophase=True)
-    else:
-        tr1.filter('bandpass', freqmin=3, freqmax=99, zerophase=True)
-    
-    if stationdir[1] in bbd_ids:
-        tr2.filter('bandpass', freqmin=0.1, freqmax=99, zerophase=True)
-    else:
-        tr2.filter('bandpass', freqmin=3, freqmax=99, zerophase=True)
-
-
-    if plot_flag:
-        plotintervals = pd.date_range(start=day[0], periods=60*60*24/sectionlen, freq=str(sectionlen)+'S')
-        print('\n --> Plotting started for ' + day[0].strftime('%Y-%m-%d') + ' .\n')
-
-        for iplot in tqdm(plotintervals):
-
-            plutil.plot_overview(
-                time_waveform       = time.copy(),
-                time_amplitudes     = tampl.copy(),
-                time_spectra        = d1t.copy(),
-                time_ratiopeaks     = tratiopeaks.copy(),
-                time_eventtime      = eventtime.copy(),
-                trace1              = tr1.copy(),
-                trace2              = tr2.copy(),
-                ratioarray          = ratio2_1.copy(),
-                ratiopeaks          = ratiopeaks.copy(),
-                kavatrigger         = kavatrigger.copy(),
-                spectrogram1        = d1spec.copy(),
-                spectrogram2        = d2spec.copy(),
-                specfrequencies1    = d1f.copy(),
-                specfrequencies2    = d2f.copy(),
-                kavaidx1            = kava1.copy(),
-                kavaidx2            = kava2.copy(),
-                kavaidxproduct      = kavaprod.copy(),
-                kavaidxproduct2     = kavaprod2.copy(),
-                eventkava           = eventkava.copy(),
-                outputdir           = outputdir,
-                h                   = iplot.hour,
-                idoi                = iplot.day,
-                imoi                = iplot.month,
-                s                   = iplot.second+iplot.minute*60,
-                ratiorange          = ratiorange)
-            
-            print('\n --> Plotted ' + iplot.strftime('%Y-%m-%d %H:%M:%S') + ' to ' + (iplot+timedelta(seconds=sectionlen)).strftime('%Y-%m-%d %H:%M:%S') + ' .\n')
-
-        print('\n --> Plotting finished for ' + day[0].strftime('%Y-%m-%d') + ' .\n')
-        
-    
-
-    return dfdaily
-
-
-def multiprocparent(dayslist):
-    from multiprocessing import Pool
-    pmain = Pool(4) #(len(dayslist))
-    results = pmain.map(multiprocchild, dayslist)
-    pmain.close()
-    pmain.join()
-    print('\n---> KavachiIndex information computed, saved and plotted daywise. \n')
-
-    dfresult = results[0]
-    if len(results) > 1:
-        for ires in results[1:]:
-            dfresult = pd.concat([dfresult, ires], ignore_index=True)
-    
-    print('\n --> Export merged event catalog for chosen time frame.')
-    return dfresult
-
 def save_df_catalog(df: pd.DataFrame,
                     outputcatalogpkl: str,
                     outputcatalog: str = None):
@@ -1642,47 +1142,6 @@ def save_df_catalog(df: pd.DataFrame,
         df.to_csv(outputcatalog, sep='\t', index=False)
     return
 
-
-def run4catalog(datetime_start: str | np.datetime64,
-                datetime_end:   str | np.datetime64,
-                rrange          = None,
-                trigbreak       = None):
-    
-    scriptstart = time.time()
-    if not os.getcwd() == 'C:/Users/Arbeit/Documents/matlab/projects/KavachiProject/KavScripts':
-        os.chdir('C:/Users/Arbeit/Documents/matlab/projects/KavachiProject/KavScripts')
-            
-    from kav_init import rootproject, rootcode, rootdata, rootouts, cataloguefile, outputlabel, month_flag, hour_flag, plot_flag, write_flag, freqbands
-    from kav_init import stationdir, stationid, shifttime, ratiorange,pkl_only, flag_bandedratio, flag_wlvl, yoi, moi, doi, hoi, shifttime, ratiorange, triggerresttime
-
-    if rrange:
-        ratiorange = rrange
-    if trigbreak:
-        triggerresttime = trigbreak
-
-    datetime_start, datetime_end = pd.to_datetime(datetime_start), pd.to_datetime(datetime_end)
-    dayslist = get_days_list(datetime_start, datetime_end, stationdir, stationid)
-
-    # breakpoint()
-    print('\n rootcode    :', rootcode); print('\n rootproject :', rootproject); print('\n rootdata    :', rootdata)
-    print('')
-    print('--- Script setup complete after '+ str(np.round(time.time() - scriptstart, 1))+' sec ---\n --> Investigate time from ' + datetime_start.strftime('%Y-%m-%d') + ' to '+ datetime_end.strftime('%Y-%m-%d'))
-
-    print('Dayslist \n -------- \n', dayslist)
-
-    dfresult = multiprocparent(dayslist)
-
-    outputcatalog   = rootouts + 'tbreak' +str(triggerresttime)+'.' + cataloguefile
-    outputcatalogpkl= rootouts + 'tbreak' +str(triggerresttime)+'.' + cataloguefile[:-4] + '.pkl'
-    if write_flag:
-        if pkl_only:
-            outputcatalog=None
-        save_df_catalog(dfresult, outputcatalogpkl, outputcatalog)
-
-    print('\n --> Script finished after '+ str(np.round(time.time() - scriptstart,1))+' sec. ')
-    # breakpoint()
-
-    return
 
 def define_ylim(ax, ydata):
     '''
@@ -1702,118 +1161,6 @@ def define_ylim(ax, ydata):
     ax.set_ylim([-ylim, ylim])
     return
 
-
-def kavachi_freq_analysis(catalog: pd.DataFrame,
-                          datetime_start: str,
-                          datetime_end: str,
-                          timebin: str = '60s'):
-    raise NotImplementedError
-    datetime_start, datetime_end = pd.to_datetime(datetime_start), pd.to_datetime(datetime_end)
-    catalog = catalog[(catalog['date'] >= datetime_start) & (catalog['date'] <= datetime_end)]
-
-    # Transform the catalog to a continuous evenly spaced time series.
-    # Define a custom length interval in seconds for the time steps. default tstep= '60s'
-    tstep = timebin
-    # Restructure the catalog to that evenly time-spaced time series and count the number of entries per time step.
-    catalog.set_index('date', inplace=True)
-    catalog_resampled = catalog.resample(tstep).size()
-    # Save the results to a DataFrame with time and counts as columns.
-    df_result = pd.DataFrame({'time': catalog_resampled.index, 'counts': catalog_resampled.values})
-
-    # perform a Fourier transform on the counts to get the frequency spectrum.
-    # Make sure to use adequate zeropadding to get a good frequency resolution.
-    # Define the time step of the time series.
-    dt      = pd.to_timedelta(tstep).total_seconds()
-    N       = len(df_result)
-    fs      = 1/dt
-    freqs   = np.fft.fftfreq(N, dt)
-    fft     = np.fft.fft(df_result['counts'])
-    freqs   = freqs[:N//2]
-    fft     = fft[:N//2]
-    amp     = np.abs(fft)
-    power   = np.abs(fft)**2
-    df_fd = pd.DataFrame({'frequency': freqs, 'amplitude': amp, 'power': power})
-
-    # Plot the results freq analysis
-    fig, ax = plt.subplots(2,1, figsize=(6,4))
-    ax[0].plot(df_fd['frequency'], df_fd['amplitude'], color='tab:blue', label='Amplitude spectrum')
-    ax[0].set_ylabel('Amplitude')
-    ax[0].set_yscale('log')
-    ax[0].set_xscale('log')
-    ax[0].legend()
-    ax[1].plot(df_fd['frequency'], df_fd['power'], color='tab:blue', label='Power spectrum')
-    ax[1].set_ylabel('Power')
-    ax[1].set_yscale('log')
-    ax[1].set_xscale('log')
-    ax[1].legend()
-    plt.tight_layout()
-    plt.show()
-
-    fig, ax = plt.subplots(1,1, figsize=(6,4))
-    ax.plot(df_fd['frequency'], df_fd['power'], color='tab:blue', label='Power spectrum')
-    ax.set_ylabel('Power')
-    ax.set_xscale('log')
-    plt.show()
-
-
-    breakpoint()
-    
-
-    # Return the DataFrame.
-    return df_result, df_fd
-    
-
-def event_tdiff_distr(catalog: pd.DataFrame,
-                      stationdir = 'KAV11',
-                      nbins = 30,
-                      binmin: int=20,
-                      binmax: int=60*60*24,
-                      triggerrestingtime = 20):
-    if stationdir == 'KAV11':
-        periods = seasons[:2][:]
-    elif stationdir == 'KAV00':
-        periods = seasons
-    else:
-        raise ValueError('stationdir must be either KAV11 or KAV00')
-    
-
-    # Create a DataFrame with all events from the original catalog lying within the periods
-    cata = pd.DataFrame()
-    for period in periods:
-        cata_period = catalog[(catalog['date'] >= period[0]) & (catalog['date'] <= period[1])]
-        cata = pd.concat([cata, cata_period], ignore_index=True)
-    
-    # Calculate the time difference between consecutive events.
-    timediff = np.diff(cata['date'])
-    timediff = timediff.astype('timedelta64[s]').astype(int)
-
-    #  create bins array from binmin to minmax with even bin values and spacing
-    # breakpoint()
-    bins     = np.linspace(binmin, binmax, nbins)
-    bins = [int(b) for b in bins]
-    countsbin= np.histogram(timediff, bins=bins)[0]
-    histo = pd.DataFrame({'bins': bins[:-1], 'counts': countsbin})
-
-    # define bin where counts are maximum
-    highest = histo['bins'][histo['counts'].idxmax()]
-
-    # Plot number of events per time difference as bar chart
-    fig, ax = plt.subplots(1,1, figsize=(6,4))
-    ax.set_title('Time difference distribution of events\nStation '+stationdir+', triggerrestingtime = '+str(triggerrestingtime)+'s')
-    ax.scatter(histo['bins'], histo['counts'], color='tab:blue', alpha=.7, label='Event time difference distribution\n peak around '+str(highest)+ ' sec', marker='o')
-    ax.set_xlabel('Time difference [s]')
-    ax.set_ylabel('Number of events')
-    ax.set_yscale('log')
-    ax.legend(); ax.grid(); plt.tight_layout()
-    plt.savefig(rootdata+'/results/timediff_distr.' + stationdir+'.'+str(triggerrestingtime) + '.png', dpi=300)
-    plt.close() # plt.show()
-
-
-    # breakpoint()
-
-    return
-    
-    
 
 def comp_adv_kava(kava1, kava2, kava1time, shifttime=ini.shifttime,window=3, enhanced_separate=False, sigma=2):
     '''
@@ -2038,7 +1385,7 @@ def compute_kava_3(x,
         ini.use_empiric_freqbands           = 0
     else:
         freq_band_info_pkl_file_fullpath    = os.path.join(ini.rootdata,freq_band_pkl)
-        fbands                              = kt.read_frequency_bands(freq_band_info_pkl_file_fullpath, station)
+        fbands                              = read_frequency_bands(freq_band_info_pkl_file_fullpath, station)
         ini.use_empiric_freqbands           = 0
 
     # --- Optional: Smooth the spectrogram for better band identification
@@ -2055,3 +1402,79 @@ def compute_kava_3(x,
     kava = kava_sumup_and_ratio_1(fbands, dspec_all, dfreq, dtime, station, waterlvl, empiric_values=ini.use_empiric_freqbands)
 
     return kava, dtime, dt, dspec_all, dfreq, dcax
+    
+
+
+def comp_rsam_v2(tr: Trace, rsamrate: int=60):
+    trace = tr.copy()
+    data = trace.data
+    sr = trace.stats.sampling_rate
+
+    ileft = np.arange(0, len(data), sr * rsamrate, dtype=int)
+    if ileft[-1] == len(data):
+        ileft = ileft[:-1]
+    iright = np.array(ileft + sr * rsamrate, dtype=int)
+    if iright[-1] > len(data):
+        iright[-1] = len(data)
+    rsam = np.zeros(len(ileft))
+    rsam = [np.mean(np.abs(data[ileft[i]:iright[i]] - np.mean(data[ileft[i]:iright[i]]))) for i in range(len(ileft))]
+    
+    time_array = pd.date_range(start=pd.to_datetime((trace.stats.starttime).datetime),
+                               end=pd.to_datetime((trace.stats.endtime).datetime),
+                               freq=f'{rsamrate}S')
+
+    return rsam, time_array
+
+def rsam_compute(datetime_start: str, datetime_end: str, stationdir: str='KAV11', stationid: str='c0941'):
+    """
+    Compute the RSAM for a given time period and station.
+
+    Parameters
+    ----------
+    datetime_start : str
+        The start time of the period to compute RSAM for.
+    datetime_end : str
+        The end time of the period to compute RSAM for.
+    stationdir : str, optional
+        The directory of the station. The default is 'KAV11'.
+    stationid : str, optional
+        The ID of the station. The default is 'c0941'.
+    
+    Returns
+    -------
+    rsam_df : DataFrame
+        A DataFrame containing the RSAM values and their corresponding timestamps.
+    """
+    if 'KavScripts' not in os.getcwd():
+        if 'KavScripts' not in os.listdir():
+            print('Working repository not found. Check path.')
+            return
+        else:
+            os.chdir('KavScripts')
+            print('Changed directory to: ', os.getcwd())
+    elif 'KavScripts' in os.getcwd():
+        print('Script already started from working repository: ', os.getcwd())
+
+    datetime_start, datetime_end = pd.to_datetime(datetime_start), pd.to_datetime(datetime_end)
+    dayslist = get_days_list(datetime_start, datetime_end, stationdir, stationid)
+    # preallocate arrays for rsam and time, so that later only the values need to be appended. For rsam it should be an array of numpy floats, for time we append pandas date_range objects
+    rsam_list, time_list = [], []
+
+    for i, idate in enumerate(tqdm(dayslist)):
+        print('Processing day: ', idate[0])
+        st = get_data3(idate[0], rootdata=rootdata, stationdir=stationdir, stationid=stationid)
+        rsam_partial, time_partial = comp_rsam_v2(st[0].copy())
+        rsam_list.append(rsam_partial)
+        time_list.append(time_partial)
+ 
+    # concatenate the lists to arrays
+    rsam_array = np.concatenate(rsam_list)
+    time_array = pd.concat(time_list)
+
+    # create a DataFrame with the rsam and time arrays and save it as a pickle file
+    rsam_df = pd.DataFrame({'rsam':rsam_array, 'time':time_array})
+    rsam_df.to_pickle(rootdata+'/results/rsam_'+stationdir+'.pkl')
+    
+    return rsam_df
+
+
