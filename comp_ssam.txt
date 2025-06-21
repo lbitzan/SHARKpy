@@ -1,0 +1,53 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import scipy as spy
+import tqdm
+
+from obspy import read, Trace, Stream, UTCDateTime
+from obspy.signal.freqattributes import spectrum
+from datetime import timedelta
+from kav_init import *
+from kavutil  import *
+
+def compute_ssam(
+	trace: Trace,
+	spectral_rate: int = 5,
+	ssamrate: int = 60,
+	print_as_trace=True,
+	fmin: int = 4,
+	fmax: int = 50,
+	fnum: int = 16 ):
+
+	tr = trace.copy()
+	tr.resample(100) # resample at 100 Hz
+	
+	spec_r 	= spectral_rate	
+	sr	= tr.stats.sampling_rate
+
+	# Set 16 (or 32) spectral bands; for geophones between 4 and 50 Hz
+	fbins = np.linspace(fmin, fmax, fnum)
+
+	# fft of 5 second intervals; respect window funct, zero_padding etc
+	freq, time, Sxx = 
+		spy.signal.spectrogram(	tr.data,
+					fs 	= sr,
+					window	= 'hann',
+					nperseg	= spec_r*sr,
+					noverlap= 0,
+					nfft	= spec_r*sr*2,
+					detrend = 'constant',
+					return_onesided = True,
+					scaling = 'spectrum',
+					mode 	= 'psd')
+
+	# average for each spectral band and per minute (12 sets of 5 seconds)
+	i = np.arange(len(fbins)-1)
+	fbands[i, :] = np.sum( Sxx[fbins[i]:fbins[i+1], axis = 0)		
+	dt = time[1]-time[0]
+	sr_new = 1/dt
+	starttime = UTCDatetime(yoi, imoi, idoi, seconds = time[0])
+	len_old	= len(fbands[0,:])
+	len_new	= len_old / (sr_new) * (1/ssamrate)
+
+	# Visualise output und return mesh of 16 bands x 1min resolution

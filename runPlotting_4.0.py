@@ -1,0 +1,325 @@
+import os
+if not os.getcwd() == 'C:/Users/Arbeit/Documents/matlab/projects/KavachiProject/KavScripts':
+    os.chdir('C:/Users/Arbeit/Documents/matlab/projects/KavachiProject/KavScripts')
+
+from    obspy.core          import  read, UTCDateTime, Stream, Trace
+from    obspy.imaging       import  spectrogram
+import  numpy               as      np
+import  datetime
+import  matplotlib.pyplot   as      plt
+import  matplotlib.colorbar as      cbar
+from    scipy               import  io, signal
+from    scipy.fft           import  fftshift
+import  pandas              as      pd
+import  time                as      tm
+import  plutil              as      plutil
+from    datetime            import timedelta
+from    colorbar_fct        import add_colorbar_outside
+from    kavutil             import * # rolling_stats, myplot, compute_kava, get_data, compute_banded_ratio
+# -----------------------------------------------------------------------------------------------------------------------
+'''
+>>> runPlotting.py <<<
+Script to evaluate data from Kavachi volcano, Solomon Islands.
+Further parameters are computated and plotted within this script and attached routines.
+This script uses routines from the KavachiProject/KavScripts directory (e.g. kavutil.py, colorbar_fct.py,...)
+
+Author:     Ludwig Bitzan, 2023
+created:    2024-01-30
+'''
+
+# Get initials
+from kav_init import *
+
+print('rootcode    :', rootcode); print('rootproject :', rootproject); print('rootdata    :', rootdata)
+
+start_time = tm.time()
+
+# --- IMPORT DATA -----------------------------------------------------------------------------------------------------
+'''
+Set seismological stations which are considered in analysis. One station per close and remote array. 
+Set also time period of interest.
+earliest date: 2023-02-07
+latest date:   2023-07-25
+'''
+
+# --- Run loop over time ---------------------------------------------------------------------------------------------------
+for imoi in moi:
+
+    if month_flag:
+       doi = org_days(stationdir=stationdir, yoi=yoi, imoi=imoi)
+            
+    if hour_flag:
+        hoi = np.arange(0,24,1)
+
+    for idoi in doi:
+        
+        print('--- Plotting started for date ' + '{:02d}'.format(idoi) +'/'+ '{:02d}'.format(imoi)+'/'+'20'+str(yoi)+' ---')
+
+        st1, _ = get_data(year=yoi, month=imoi, day=idoi, rootdata=rootdata, stationdir=stationdir[0], stationid=stationid[0])
+        st2, _ = get_data(year=yoi, month=imoi, day=idoi, rootdata=rootdata, stationdir=stationdir[1], stationid=stationid[1])
+
+        # Create output directory corresponding to date
+        outputdir    = rootouts+outputlabel+'/'+outputlabel+'20' + '{year}'.format(year=yoi) +'{:02d}'.format(imoi)+'/'+outputlabel+'20'+ '{year}'.format(year=yoi) + '{:02d}'.format(imoi) + '{:02d}'.format(idoi) +'/' # <--- set path outputdir for  larger data set on external hard drive
+        outputcatalog= rootouts+cataloguefile                                                         # <--- set path and name for output catalogue for larger data set on external hard drive
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
+
+        # --- Computations ------------------------------------------------------------------------------------------------- 
+        ''' Assign traces to variables for computations in time domain. '''
+        tr1          = st1[0]
+        tr2          = st2[0]
+        ''' Assign and prefilter traces for computations in frequency domain. '''
+        d1          = tr1.copy()
+        d2          = tr2.copy()
+        # d1.filter('bandpass', freqmin=3, freqmax=60, zerophase=True)
+        # d2.filter('bandpass', freqmin=3, freqmax=60, zerophase=True)
+
+        # --- Create time array relative to starttime
+        time         = tr1.times(reftime = tr1.stats.starttime)
+        
+        # --- Compute amplitudes
+        shift       = shifttime / tr1.stats.delta                                       # time delay between stations as no of indices
+
+        if flag_bandedratio == False:
+            
+            ratio2_1, tampl = compute_simple_ratio(tr1, tr2, stats= stationdir)
+
+        # --- compute amplitude ratio based on particular frequency bands --------------------------------------------------------------
+        if flag_bandedratio:
+           
+           ratio2_1, tampl = compute_banded_ratio(tr1, tr2, freqbands=freqbands, stats= stationdir)
+           
+
+
+        # --- Spectrograms
+        ''' Use d1, d2 as time series for spectrogram computations. Traces are filtered before between freqmin and freqmax.'''
+        sr          = tr1.stats.sampling_rate       # sampling rate
+        nfft            = int(sr)  # int(sr)
+        noverlap        = int(sr*.75) #= int(sr/2)
+        cspec           = plt.get_cmap('jet')                           # colormap for spectrogram 'viridis' 'plasma' 'inferno' 'magma' 'cividis' 'jet' 'gnuplot2'
+
+        kava1, d1t, dtspec, d1spec, d1f, cax =  compute_kava(d1, noverlap=noverlap, station= stationdir[0], frequency_bands=freqbands, cmap=cspec, appl_waterlvl=flag_wlvl)
+        kava2, d2t, dtspec, d2spec, d2f, cax =  compute_kava(d2, noverlap=noverlap, station= stationdir[1], frequency_bands=freqbands, cmap=cspec, appl_waterlvl=flag_wlvl)
+
+        # --- Define time step between sample points
+        dtsp            = d1t[1]-d1t[0]
+        shiftsp         = shifttime/dtsp
+
+        # --- Compute KaVA Index product according to time-shift
+        # kavaprod      = kava2smooth[:-np.int64(shiftkavasmooth)] * kava1smooth[np.int64(shiftkavasmooth):]
+        kavaprod        = kava2[:-np.int64(shiftsp)] * kava1[np.int64(shiftsp):]
+        kavaprod2       = rolling_stats(kavaprod, np.amax, window=10)    # max envelope of kavaprod 6
+
+        # --- Implement event trigger based on amplitude ratio        
+        '''new ratio trigger:'''
+        ratiodelta = tampl[1] - tampl[0]
+        ratiotriggerpeaks,_ = signal.find_peaks(ratio2_1, height=ratiorange, distance=2/ratiodelta) # 2/(tampl[1]-tampl[0]) = 2 sec
+
+        ratiotrigger2   = np.zeros_like(ratio2_1)
+        ratiotrigger2[ratiotriggerpeaks] = 1
+
+        pulselen        = dtsp/ratiodelta
+        ratiotrigger2   = rolling_stats(ratiotrigger2, np.amax, window=np.int64(pulselen * .75))
+
+        ratiopeaks      = ratio2_1[ratiotriggerpeaks]
+        tratiopeaks     = tampl[ratiotriggerpeaks]
+
+        # --- Implement event trigger based on KaVA Index
+        kavaprodtrig    = np.zeros_like(kavaprod)
+        kavaprodtrig    = np.where(kavaprod2 > kavaprodemp, kavaprodtrig + 1, kavaprodtrig)
+
+        ''' Assign unisized trigger traces in boolean arrays '''
+        if len(d2t) > len(tampl):
+            idx4trigtime    = d2t[:-np.int64(shiftsp)].searchsorted(tampl)
+            kavatrigger     = kavaprodtrig
+            ratiotrigger    = np.interp(d2t[:-np.int64(shiftsp)], tampl, ratiotrigger2)
+            ratiotrigger    = np.round(ratiotrigger)
+        elif len(d2t) < len(tampl):
+            idx4trigtime    = tampl.searchsorted(d2t[:-np.int64(shiftsp)])
+            ratiotrigger    = ratiotrigger2
+            kavatrigger     = np.interp(tampl, d2t[:-np.int64(shiftsp)], kavaprodtrig)
+            kavatrigger     = np.round(kavatrigger)
+        else:
+            print("Number of indices in kava time and ampl time are equal.")
+            idx4trigtime    = np.arange(len(tampl))
+            kavatrigger     = kavaprodtrig
+            ratiotrigger    = ratiotrigger2
+        
+        # --- Implement combined event trigger based on both KaVA Index and amplitude ratio
+        combtrigger     = np.zeros_like(kavatrigger)
+        combtrigger     = np.where((ratiotrigger == 1) & (kavatrigger == 1), combtrigger + 1, combtrigger)
+
+        eventmarker     = np.zeros_like(combtrigger)
+        eventmarker[1:] = np.where(combtrigger[1:] - combtrigger[:-1] == 1, eventmarker[1:] +1, eventmarker[1:])
+        eventmarker[0]  = 0
+        
+        # --- Group activities to single events
+        if flag_group == True:
+            trigger = np.zeros_like(eventmarker, dtype='int')
+            switch  = True
+            activities = np.array(kavatrigger) > 0
+            for itrig, A in enumerate(activities):
+                if A == False:
+                    switch  = True
+                    continue
+                elif (A == True) & (switch == True):
+                    if eventmarker[itrig] == True:
+                        trigger[itrig]  = 1
+                        switch          = False
+                    else:
+                        continue
+                elif (A == True) & (switch == False):
+                    continue
+            eventmarker = trigger       
+        
+
+        ''' Assign event variables for printing/plotting. '''
+        if len(d2t[:-np.int64(shiftsp)]) > len(tampl):
+            eventtime           = d2t[:-np.int64(shiftsp)][np.where(eventmarker == 1)]
+            eventkava           = kavaprod2[np.where(eventmarker == 1)] # kavaprod2 is the max envelope of kavaprod
+
+            ratio2_1forevents= np.interp(d2t[:-np.int64(shiftsp)], tampl, ratio2_1)
+            eventratio          = ratio2_1forevents[  np.where(eventmarker == 1)]
+
+        elif len(d2t[:-np.int64(shiftsp)]) < len(tampl):
+            eventtime           = tampl[np.where(eventmarker == 1)]
+            eventratio          = ratio2_1[np.where(eventmarker == 1)]
+
+            kavaprod2forevents  = np.interp(tampl, d2t[:-np.int64(shiftsp)], kavaprod2)
+            eventkava           = kavaprod2forevents[np.where(eventmarker == 1)]
+
+        # --- Write output to file ------------------------------------------------------------------------------------------
+        '''
+        Append line in catalogue for each event triggered by both ratio and kava prod at the same time.
+        Note datetime as utc, amplitude ratio and kava product in its respective column. 
+        If both triggers stay in phase for more than one indices, just append the first appearence.
+        '''
+        if write_flag:
+            if not os.path.exists(outputcatalog):
+                with open(outputcatalog, 'w') as file:
+                    file.write('App_event_time(UTC), Norm_amplitude_ratio[], Adv_KaVA_idx\n')
+                
+            for i in np.arange(len(eventtime)):
+                seconds4catalogue   = eventtime[i]
+                min4cata, sec4cata  = divmod(seconds4catalogue, 60)
+                hour4cata, min4cata = divmod(min4cata, 60)
+            
+                time2catalogue      = datetime.datetime(year=2023, month=imoi, day=idoi, hour=int(hour4cata), minute=int(min4cata), second=int(sec4cata))
+
+                utc_time            = time2catalogue.strftime("%d-%b-%Y %H:%M:%S")
+                amplitude_ratio     = np.round(eventratio[i], 2)
+                adv_kava_idx        = np.round(eventkava[i], 2)
+                with open(outputcatalog, 'a') as file:
+                    file.write(f"{utc_time}, {amplitude_ratio}, {adv_kava_idx}\n")
+
+        # --- Plotting ------------------------------------------------------------------------------------------------------
+        tr1         = st1[0].copy()
+        tr2         = st2[0].copy()
+        tr1.filter('bandpass', freqmin=3, freqmax=99, zerophase=True)
+        tr2.filter('bandpass', freqmin=3, freqmax=99, zerophase=True)
+
+        if plot_flag:
+            minutes     = np.copy(time)
+            minutes     = time/60
+            # sectionlen  = 60*3 # length of section that is evaluated [s]
+
+            markeroffset= 20
+            yaxlimshark = 2000
+
+            for h in hoi:
+                print('--- Plotting started for ' + '{:02d}'.format(h) + ':00 h ' + '{:02d}'.format(idoi) +'/'+ '{:02d}'.format(imoi)+'/'+'20'+str(yoi)+' ---')
+                print('--- %.02f seconds ---' % (tm.time() - start_time))
+                
+                for s in np.arange(0, 60*60, sectionlen):
+
+                    # time_waveform   = time.copy()
+                    # time_amplitudes = tampl.copy()
+                    # time_spectra    = d1t.copy()
+                    # time_ratiopeaks = tratiopeaks.copy()
+                    # time_eventtime  = eventtime.copy()
+                    # trace1          = tr1.copy()
+                    # trace2          = tr2.copy()
+                    # ratioarray      = ratio2_1.copy()
+                    # ratiotrigger    = ratiotrigger2.copy()
+                    # ratiopeaks      = ratiopeaks.copy()
+                    # kavatrigger     = kavatrigger.copy()
+                    # spectrogram1    = d1spec.copy()
+                    # spectrogram2    = d2spec.copy()
+                    # specfrequencies1 = d1f.copy()
+                    # specfrequencies2 = d2f.copy()
+                    # kavaidx1        = kava1.copy()
+                    # kavaidx2        = kava2.copy()
+                    # kavaidxproduct  = kavaprod.copy()
+                    # kavaidxproduct2 = kavaprod2.copy()
+                    # eventkava       = eventkava.copy()
+
+                    plutil.plot_overview(
+                        time_waveform   = time.copy(),
+                        time_amplitudes = tampl.copy(),
+                        time_spectra    = d1t.copy(),
+                        time_ratiopeaks = tratiopeaks.copy(),
+                        time_eventtime  = eventtime.copy(),
+                        trace1          = tr1.copy(),
+                        trace2          = tr2.copy(),
+                        ratioarray      = ratio2_1.copy(),
+                        # ratiotrigger    = ratiotrigger2.copy(),
+                        ratiopeaks      = ratiopeaks.copy(),
+                        kavatrigger     = kavatrigger.copy(),
+                        spectrogram1    = d1spec.copy(),
+                        spectrogram2    = d2spec.copy(),
+                        specfrequencies1 = d1f.copy(),
+                        specfrequencies2 = d2f.copy(),
+                        kavaidx1        = kava1.copy(),
+                        kavaidx2        = kava2.copy(),
+                        kavaidxproduct  = kavaprod.copy(),
+                        kavaidxproduct2 = kavaprod2.copy(),
+                        eventkava       = eventkava.copy(),
+                        outputdir       = outputdir,
+                        h               = h,
+                        idoi            = idoi,
+                        imoi            = imoi,
+                        s               = s)
+
+print('--- Running script finished after %.02f seconds ---' % (tm.time() - start_time))    
+            
+
+'''
+--- To Do: ------------------------------------------------------------------------------------------------------------
+- Add loop over different years
+- Improve catalogue writing by considering event duration
+
+- Enhance trigger by adding a sta-lta trigger for the advanced KaVA Index, so that the event is not only triggered by the peaks.
+
+- add events in >timeshift_ana.py< to improve the results statistical validity.
+
+--- Done: ------------------------------------------------------------------------------------------------------------
++ Add feature to write output to file
++ Add feature to plot spectrograms
++ Add feature to plot KaVA Index
++ Add feature to plot amplitude ratio
++ Add feature to plot waveforms
++ Add feature to plot event trigger
++ Add feature to plot event marker
++ Add feature to combine trace snippeds of a single day to one trace to avoid crashing of the script.
+
++ Add loop over different months
++ Add loop over different days
++ Add loop over different hours and specific time sections
+
++ Add computation of amplitude ratio
++ Add computation of KaVA Index
++ Add computation of Advanced KaVA Index (KaVA Product)
++ Add computation of event trigger based on amplitude ratio and Advanced KaVA Index
+
++ Enhance temporal resolution of amplitude ratio by adjusting the window size and shift.
+
++ NewScript to read catalogue and perform statistic anaylisis on registered events
+    - count events per day/week/month
+    - compute mean of adv KaVA Idx for days/weeks/months for catalogue events
+    - plot results in Histograms daily events/week; daily events/month; weekly events/month; weekly events/recording time; monthly events/recording time;
+    - add adv KaVA means to Histograms described above
+
++ Add second station empiricals to the code to be able to chose a different station for the remote array. (Check 4 data availability first!)
++ Implement "compute_kava()" function
+    
+'''

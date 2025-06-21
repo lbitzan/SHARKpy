@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Kavachi-stations-09-2023.kml</name>
+	<open>1</open>
+	<StyleMap id="msn_wht-blank">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_wht-blank0</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_wht-blank2</styleUrl>
+		</Pair>
+	</StyleMap>
+	<StyleMap id="msn_wht-blank0">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_wht-blank</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_wht-blank0</styleUrl>
+		</Pair>
+	</StyleMap>
+	<StyleMap id="msn_wht-blank1">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_wht-blank1</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_wht-blank3</styleUrl>
+		</Pair>
+	</StyleMap>
+	<StyleMap id="msn_wht-blank2">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_wht-blank3</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_wht-blank1</styleUrl>
+		</Pair>
+	</StyleMap>
+	<StyleMap id="msn_wht-blank3">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_wht-blank2</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_wht-blank</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="sh_wht-blank">
+		<IconStyle>
+			<color>ffffff00</color>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sh_wht-blank0">
+		<IconStyle>
+			<color>ff0000ff</color>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sh_wht-blank1">
+		<IconStyle>
+			<color>ff00ffff</color>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sh_wht-blank2">
+		<IconStyle>
+			<color>ffffff00</color>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sh_wht-blank3">
+		<IconStyle>
+			<color>ff0000ff</color>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sn_wht-blank">
+		<IconStyle>
+			<color>ff0000ff</color>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sn_wht-blank0">
+		<IconStyle>
+			<color>ffffff00</color>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sn_wht-blank1">
+		<IconStyle>
+			<color>ff0000ff</color>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sn_wht-blank2">
+		<IconStyle>
+			<color>ffffff00</color>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Style id="sn_wht-blank3">
+		<IconStyle>
+			<color>ff00ffff</color>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<ListStyle>
+			<ItemIcon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/wht-blank-lv.png</href>
+			</ItemIcon>
+		</ListStyle>
+	</Style>
+	<Folder>
+		<name>Wegpunkte</name>
+		<open>1</open>
+		<Placemark>
+			<name>KAV00-BDD (63)</name>
+			<styleUrl>#msn_wht-blank</styleUrl>
+			<Point>
+				<coordinates>158.2118679955602,-8.766286019235849,27.702824</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV01-935 (52)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2144730072469,-8.769397968426347,65.100235</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV02-937 (59)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2094949949533,-8.765211040154099,22.356339</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV03-940 (60)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2099799718708,-8.767423024401069,35.540607</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV04-939 (61)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2082620169967,-8.767737010493875,40.541855</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV05-938 (62)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2066179905087,-8.769120024517179,50.068493</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV06-998 (53)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2139509823173,-8.766776025295258,101.051392</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV07-992 (54)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2137110084295,-8.763543963432312,44.442085</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV08-991 (64)</name>
+			<styleUrl>#msn_wht-blank2</styleUrl>
+			<Point>
+				<coordinates>158.2131299749017,-8.762014014646411,30.278095</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV10-A2T</name>
+			<styleUrl>#msn_wht-blank0</styleUrl>
+			<Point>
+				<coordinates>158.15286,-8.81879,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV11-941 (56)</name>
+			<styleUrl>#msn_wht-blank</styleUrl>
+			<Point>
+				<coordinates>158.1504790205508,-8.819130985066295,38.433121</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV12-990</name>
+			<styleUrl>#msn_wht-blank1</styleUrl>
+			<Point>
+				<coordinates>158.15218,-8.821099999999999,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV13-990-??? (55)</name>
+			<styleUrl>#msn_wht-blank</styleUrl>
+			<Point>
+				<coordinates>158.1520900223404,-8.819290995597839,47.950424</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV14-A?? (57)</name>
+			<styleUrl>#msn_wht-blank3</styleUrl>
+			<Point>
+				<coordinates>158.1512369960546,-8.820199007168412,43.434372</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>KAV15-BLF (58)</name>
+			<styleUrl>#msn_wht-blank3</styleUrl>
+			<Point>
+				<coordinates>158.1518460251391,-8.821877986192703,39.683434</coordinates>
+			</Point>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>
