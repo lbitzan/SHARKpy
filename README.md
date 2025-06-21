@@ -2,7 +2,7 @@
 This repository provides the code and tools to apply a dual-station approach for volcano-seismic monitoring. A continuos activity index, SHARK, is computed. Further, magnitude estimation is supported.
 ## Data
 Set the data path in class kava_ini. Data should be organised as follow
-"rootdata/<stationdir>/<stationid><yymmddhhmmss>.pri0" and ".pri1","pri2" respectively.
+"rootdata/stationdir/stationid+yymmddhhmmss+.pri0" and ".pri1","pri2" respectively.
 
 ## Input parameters
 Custom input parameter are defined in the ini class
