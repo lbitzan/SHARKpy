@@ -1,11 +1,12 @@
 # SHARKpy
 This repository provides the code and tools to apply a dual-station approach for volcano-seismic monitoring. A continuos activity index, SHARK, is computed. Further, magnitude estimation is supported.
 ## Data
-Set the data path in class kava_ini. Data should be organised as follow
-"rootdata/stationdir/stationid+yymmddhhmmss+.pri0" and ".pri1","pri2" respectively.
+Set the data path in class kava_ini. Data should be provided as mseed-files. One file for each component. Only vertical component is required, horizontal components are optional.
+The path strucure should be organised as follows:
+"rootdata/stationdir/stationid+yymmddhhmmss+.pri0" and "+.pri1","+.pri2" respectively.
 
 ## Input parameters
-Custom input parameter are defined in the ini class
+Custom input parameter are defined in the ini class kava_ini
 
 ## The packages
 ### kavutil_2
